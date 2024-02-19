@@ -1,0 +1,29 @@
+html, body, #swarm-container {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: -o-crisp-edges;
+  image-rendering: optimize-contrast;
+  -ms-interpolation-mode: nearest-neighbor;
+  background-color: #313338;
+  color: white;
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+}
+
+#swarm-container {
+  overflow: hidden;
+  max-height: 100%;
+  max-width: 100%;
+  background-color: #232428;
+}
+
+.title {
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  translate: -50% -50%;
+  font-size: 7em;
+  text-shadow: #111214 5px 5px 12px;
+}
