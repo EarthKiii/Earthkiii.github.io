@@ -1,4 +1,4 @@
-html, body, #swarm-container {
+html, body, #main-canva {
   height: 100%;
   width: 100%;
   margin: 0;
@@ -12,9 +12,16 @@ html, body, #swarm-container {
   font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
-#swarm-container {
+.landing-space {
+  width: 100%;
+  height: 100%;
+}
+
+#main-canva {
   overflow: hidden;
   max-height: 100%;
+  min-width: 100%;
+  min-height: 100%;
   max-width: 100%;
   background-color: #232428;
 }
@@ -25,5 +32,9 @@ html, body, #swarm-container {
   left: 50%;
   translate: -50% -50%;
   font-size: 7em;
-  text-shadow: #111214 5px 5px 12px;
+  mix-blend-mode: difference;
+}
+
+.title > span {
+  filter: saturate(0) contrast(1000%);
 }

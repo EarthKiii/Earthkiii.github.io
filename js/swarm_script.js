@@ -1,23 +1,25 @@
 import RAPIER from 'rapier3d-compat';
 
-var scene, camera, renderer, core, world, boxCollider;
+var scene, camera, mainRenderer, core, world;
+const canvas = document.getElementById("main-canva")
 
 const coreCircle = new THREE.Spherical(2);
 const coreCircleVect = new THREE.Vector3();
 const coreRotation = new THREE.Euler(45, 45, 45);
 
 const center = new THREE.Vector3(0, 0, 0);
+const gravityCenter = center.clone();
 const GFORCE = 6.67408e-11;
 const sqrtBallAmount = 40;
 const spheresBodies = new Array();
 
 const sizes = {
-  width: window.innerWidth,
-  height: window.innerHeight
+  width: canvas.clientWidth,
+  height: canvas.clientHeight 
 };
 
 const ballGeometry = new THREE.SphereGeometry(0.1, 32, 32);
-const ballMaterial = new THREE.MeshPhongMaterial({ color: 0xAAFF00 }); //MeshLambertMaterial
+const ballMaterial = new THREE.MeshPhongMaterial({ color: 0xdcdbd7}); //MeshPhongMaterial //, emissive: 0xffffff 
 
 // Create the Three.js scene
 function initGraphics() {
@@ -29,19 +31,20 @@ function initGraphics() {
   camera.lookAt(center);
   scene.add(camera);
 
-  const pointLight = new THREE.DirectionalLight(0xFFFFFF, 0.5);
-  pointLight.castShadow = true;
-  camera.add(pointLight);
+  const shadowLight = new THREE.DirectionalLight(0xFFFFFF, 0.1);
+  shadowLight.castShadow = true;
+  camera.add(shadowLight);
+  const light = new THREE.PointLight(0xFFFFFF, 1);
+  light.position.set(0, -10, 0);
+  scene.add(light);
 
-
-  renderer = new THREE.WebGLRenderer({
-    canvas: document.getElementById("swarm-container"),
-    alpha: true
+  mainRenderer = new THREE.WebGLRenderer({
+    canvas: canvas
   });
-  renderer.setSize(sizes.width, sizes.height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  mainRenderer.setSize(sizes.width, sizes.height);
+  mainRenderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  mainRenderer.shadowMap.enabled = true;
+  mainRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
 }
 
 function createBoxCore(pos) {
@@ -49,7 +52,7 @@ function createBoxCore(pos) {
   coreConfig.setTranslation(pos.x, pos.y, pos.z);
   core = world.createRigidBody(coreConfig);
   const boxColliderDesc = RAPIER.ColliderDesc.cuboid(0.6, 0.6, 0.6).setMass(2.0).setRestitution(0.01).setActiveEvents(RAPIER.ActiveEvents.COLLISION_EVENTS);
-  boxCollider = world.createCollider(boxColliderDesc, core);
+  world.createCollider(boxColliderDesc, core);
   core.setRotation(new THREE.Quaternion(0, 0, 0, 0), true);
 }
 
@@ -83,31 +86,47 @@ function update() {
   core.setRotation(rotationQuaternions, true);
   for (let i = 0; i < spheresBodies.length; ++i) {
     const sphereBody = spheresBodies[i];
-    let threeSpherePosition = new THREE.Vector3(sphereBody.translation().x, sphereBody.translation().y, sphereBody.translation().z);
+    const rapierSpherePosition = sphereBody.translation();
+    const threeSpherePosition = new THREE.Vector3(rapierSpherePosition.x, rapierSpherePosition.y, rapierSpherePosition.z);
     const scale =
-      (GFORCE * core.mass() * sphereBody.mass()) / Math.pow(threeSpherePosition.distanceTo(center), 2);
-    const force = center.clone().sub(threeSpherePosition).normalize().multiplyScalar(scale).normalize(); //scale
+      (GFORCE * core.mass() * sphereBody.mass()) / Math.pow(threeSpherePosition.distanceTo(gravityCenter), 2);
+    const force = gravityCenter.clone().sub(threeSpherePosition).normalize().multiplyScalar(scale).normalize(); //scale
     sphereBody.applyImpulse(force, true);
     const sphereMesh = sphereBody.userData;
-    sphereMesh.position.set(sphereBody.translation().x, sphereBody.translation().y, sphereBody.translation().z);
-    sphereMesh.quaternion.set(
-      sphereBody.rotation().x,
-      sphereBody.rotation().y,
-      sphereBody.rotation().z,
-      sphereBody.rotation().w
-    );
+    sphereMesh.position.copy(threeSpherePosition)
   }
   
-  renderer.render(scene, camera);
+  mainRenderer.render(scene, camera);
 }
-
-
 
 function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
+    // Update sizes
+    sizes.width = canvas.clientWidth;
+    sizes.height = canvas.clientHeight;
+
+    camera.aspect = sizes.width / sizes.height;
     camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    mainRenderer.setSize(sizes.width, sizes.height);
 }
+
+function getMousePos(event) {
+  var rect = canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - rect.left - sizes.width * 0.5)/100,
+    y: (event.clientY - rect.top - sizes.height * 0.5)/100
+  };
+}
+
+canvas.addEventListener("mousedown", (event) => {
+  const mousePos = getMousePos(event);
+  console.log(mousePos)
+  gravityCenter.x = mousePos.x
+  gravityCenter.z = -mousePos.y
+})
+
+canvas.addEventListener("mouseup", () => {
+  gravityCenter.copy(center);
+})
 
 async function main() {
   await RAPIER.init();
