@@ -26,15 +26,31 @@ html, body, #main-canva {
   background-color: #232428;
 }
 
-.title {
+.title-layer1 {
+  z-index: 1;
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  translate: -50% -50%;
+  mix-blend-mode: overlay;
+  font-size: 7em;
+  -webkit-mask:
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0);
+  mask: 
+    linear-gradient(#000 0 0),
+    linear-gradient(#000 0 0);
+  mask-clip: padding-box;
+  -webkit-mask-clip: text, padding-box;
+  mask-composite: intersect;
+}
+
+.title-layer2 {
+  z-index: 2;
   position: absolute;
   top: 40%;
   left: 50%;
   translate: -50% -50%;
   font-size: 7em;
   mix-blend-mode: difference;
-}
-
-.title > span {
-  filter: saturate(0) contrast(1000%);
 }
