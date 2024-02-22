@@ -132,6 +132,7 @@ function pointerUp() {
 
 canvas.addEventListener("pointerdown", pointerDown)
 canvas.addEventListener("pointerup", pointerUp)
+canvas.addEventListener("pointercancel", pointerUp)
 
 async function main() {
   await RAPIER.init();
