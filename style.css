@@ -31,7 +31,7 @@ html, body, #main-canva {
   position: absolute;
   top: 40%;
   left: 50%;
-  translate: -50% -40%;
+  translate: -50% -60%;
   font-size: 7em;
   user-select: none;
 }
