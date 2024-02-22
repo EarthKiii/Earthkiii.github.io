@@ -18,7 +18,7 @@ const sizes = {
   height: canvas.clientHeight 
 };
 
-const ballGeometry = new THREE.SphereGeometry(0.1, 32, 32);
+const ballGeometry = new THREE.SphereGeometry(0.1, 16, 16);
 const ballMaterial = new THREE.MeshPhongMaterial({ color: 0xdcdbd7}); //MeshPhongMaterial //, emissive: 0xffffff 
 
 // Create the Three.js scene
