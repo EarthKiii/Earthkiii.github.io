@@ -109,29 +109,29 @@ function onWindowResize() {
     mainRenderer.setSize(sizes.width, sizes.height);
 }
 
-function getMousePos(event) {
-  var rect = canvas.getBoundingClientRect();
+function getPointerPos(event) {
+  let rect = canvas.getBoundingClientRect();
+  let touch = (event.touches && event.touches[0]) || (event.pointerType && event.pointerType === 'touch' && evt);
+  let clientX = (touch || event).clientX;
+  let clientY = (touch || event).clientY;
   return {
-    x: (event.clientX - rect.left - sizes.width * 0.5)/100,
-    y: (event.clientY - rect.top - sizes.height * 0.5)/100
+    x: (clientX - rect.left - sizes.width * 0.5)/100,
+    y: (clientY - rect.top - sizes.height * 0.5)/100
   };
 }
 
-function mouseDown(event) {
-  const mousePos = getMousePos(event);
-  gravityCenter.x = mousePos.x
-  gravityCenter.z = -mousePos.y
+function pointerDown(event) {
+  const pointerPos = getPointerPos(event);
+  gravityCenter.x = pointerPos.x
+  gravityCenter.z = -pointerPos.y
 }
 
-function mouseUp(event) {
+function pointerUp() {
   gravityCenter.copy(center);
 }
 
-canvas.addEventListener("mousedown", mouseDown)
-canvas.addEventListener("touchstart", mouseDown)
-
-canvas.addEventListener("mouseup", mouseUp)
-canvas.addEventListener("touchend", mouseUp)
+canvas.addEventListener("pointerdown", pointerDown)
+canvas.addEventListener("pointerup", pointerUp)
 
 async function main() {
   await RAPIER.init();
