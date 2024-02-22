@@ -117,16 +117,21 @@ function getMousePos(event) {
   };
 }
 
-canvas.addEventListener("mousedown", (event) => {
+function mouseDown(event) {
   const mousePos = getMousePos(event);
-  console.log(mousePos)
   gravityCenter.x = mousePos.x
   gravityCenter.z = -mousePos.y
-})
+}
 
-canvas.addEventListener("mouseup", () => {
+function mouseUp(event) {
   gravityCenter.copy(center);
-})
+}
+
+canvas.addEventListener("mousedown", mouseDown)
+canvas.addEventListener("touchstart", mouseDown)
+
+canvas.addEventListener("mouseup", mouseUp)
+canvas.addEventListener("touchend", mouseUp)
 
 async function main() {
   await RAPIER.init();
