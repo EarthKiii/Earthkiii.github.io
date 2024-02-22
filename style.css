@@ -33,6 +33,7 @@ html, body, #main-canva {
   left: 50%;
   translate: -50% -40%;
   font-size: 7em;
+  user-select: none;
 }
 
 .t1 {
