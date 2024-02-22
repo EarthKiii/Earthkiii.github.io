@@ -111,7 +111,7 @@ function onWindowResize() {
 
 function getPointerPos(event) {
   let rect = canvas.getBoundingClientRect();
-  let touch = (event.touches && event.touches[0]) || (event.pointerType && event.pointerType === 'touch' && evt);
+  let touch = (event.touches && event.touches[0]) || (event.pointerType && event.pointerType === 'touch' && event);
   let clientX = (touch || event).clientX;
   let clientY = (touch || event).clientY;
   return {
