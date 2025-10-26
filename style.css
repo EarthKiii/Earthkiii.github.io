@@ -79,7 +79,7 @@ html, body, #main-canva {
 }
 
 .card::after {
-  content: "Github Repository";
+  content: attr(default-text);
   display: flex;
   align-items: center;
   justify-content: center;
