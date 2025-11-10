@@ -1,8 +1,8 @@
-import ReactDOM from 'react-dom';
 import SwarmCanvaComponent from './SwarmCanvaComponent';
+import { createRoot } from 'react-dom/client';
 
 it('It should mount', () => {
-  const div = document.createElement('div');
-  ReactDOM.render(<SwarmCanvaComponent />, div);
-  ReactDOM.unmountComponentAtNode(div);
+  const root = createRoot(document.createElement('div'));
+  root.render(<SwarmCanvaComponent />);
+  root.unmount();
 });

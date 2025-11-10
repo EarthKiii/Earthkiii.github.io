@@ -15,9 +15,7 @@ const OBJECT_RESTITUTION = 0.01;
 
 const GRAVITY_CENTER = new Vector3(0, 0, 0);
 
-interface SwarmCanvaComponentProps {}
-
-const SwarmCanvaComponentBody: FC<SwarmCanvaComponentProps> = () => { 
+const SwarmCanvaComponentBody: FC = () => { 
   const coreRef = useRef<RapierRigidBody | null>(null);
   const coreRotationEuler = useRef(new Euler(45, 45, 45));
 
@@ -44,7 +42,7 @@ const SwarmCanvaComponentBody: FC<SwarmCanvaComponentProps> = () => {
   }, []);
 
   // Apply gravitational impulses every frame
-  useFrame((_, delta) => {
+  useFrame((_rs, _delta) => {
     if (!ballsRigidBodiesRef.current || !coreRef.current) return;
 
     // rotate the core slowly
