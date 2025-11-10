@@ -1,7 +1,7 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { InstancedRigidBodies, RapierRigidBody, BallCollider, type InstancedRigidBodyProps, Physics, RigidBody } from "@react-three/rapier";
 import { useMemo, useRef, type FC } from 'react';
-import { Euler, Quaternion, Spherical, Vector3 } from 'three';
+import { Color, Euler, Quaternion, Spherical, Vector3 } from 'three';
 
 const SQRT_BALL_AMOUNT = 40;
 const COUNT = SQRT_BALL_AMOUNT ** 2;
@@ -15,6 +15,8 @@ const OBJECT_RESTITUTION = 0.01;
 
 const GRAVITY_CENTER = new Vector3(0, 0, 0);
 
+const BG_COLOR = new Color(0x232428);
+
 const SwarmCanvaComponentBody: FC = () => { 
   const coreRef = useRef<RapierRigidBody | null>(null);
   const coreRotationEuler = useRef(new Euler(45, 45, 45));
@@ -24,17 +26,18 @@ const SwarmCanvaComponentBody: FC = () => {
   // build positions on a spherical distribution (porting the spherical packing from your script)
   const instances = useMemo(() => {
     const inst: InstancedRigidBodyProps[] = [];
-    const s = new Spherical(2);
-    const v = new Vector3();
+    const coreCirlce = new Spherical(2);
+    const coreCirlceVect = new Vector3();
 
     for (let i = 0; i < SQRT_BALL_AMOUNT; ++i) {
       for (let j = 0; j < SQRT_BALL_AMOUNT; ++j) {
-        s.theta += j * 20;
-        s.phi += i * 20;
-        v.setFromSpherical(s);
+        coreCirlce.theta += j * 20;
+        coreCirlce.phi += i * 20;
+        coreCirlceVect.setFromSpherical(coreCirlce);
+
         inst.push({
           key: `inst_${i}_${j}`,
-          position: [v.x, v.y, v.z]
+          position: [coreCirlceVect.x, coreCirlceVect.y, coreCirlceVect.z]
         });
       }
     }
@@ -50,15 +53,18 @@ const SwarmCanvaComponentBody: FC = () => {
     const q = new Quaternion().setFromEuler(coreRotationEuler.current);
     coreRef.current.setRotation(q, true);
 
-    ballsRigidBodiesRef.current?.forEach((ballRB) => {
-      const translation = ballRB.translation();
-      const pos: Vector3 = new Vector3(translation.x, translation.y, translation.z);
+    Promise.all(
+      ballsRigidBodiesRef.current?.map((ballRB) => new Promise((resolve) => {
+        const translation = ballRB.translation();
+        const pos: Vector3 = new Vector3(translation.x, translation.y, translation.z);
 
-      // Newtonian-ish force
-      const scale = (GFORCE * CORE_MASS * SPHERE_MASS) / Math.pow(pos.distanceTo(GRAVITY_CENTER), 2);
-      const impulse = GRAVITY_CENTER.clone().sub(pos).normalize().multiplyScalar(scale).normalize();
-      ballRB.applyImpulse(impulse, true);
-    });
+        // Newtonian-ish force
+        const scale = (GFORCE * CORE_MASS * SPHERE_MASS) / Math.pow(pos.distanceTo(GRAVITY_CENTER), 2);
+        const impulse = GRAVITY_CENTER.clone().sub(pos).normalize().multiplyScalar(scale).normalize();
+        ballRB.applyImpulse(impulse, true);
+        resolve(true);
+      }
+    )));
   });
 
   return (
@@ -102,10 +108,12 @@ const SwarmCanvaComponent = () => {
       <Canvas 
         ref={canvaRef}
         shadows>
-          <perspectiveCamera aspect={canvaRef.current ? canvaRef.current.clientWidth / canvaRef.current.clientHeight : 1} position={[0, -5, 0]} fov={75} near={0.1} far={1000} >
-            <directionalLight color={0xffffff} intensity={0.1} />
-          </perspectiveCamera>
-        <SwarmCanvaComponentBody />
+        <scene background={BG_COLOR}>
+            <perspectiveCamera aspect={canvaRef.current ? canvaRef.current.clientWidth / canvaRef.current.clientHeight : 1} position={[0, -5, 0]} fov={75} near={0.1} far={1000} >
+              <directionalLight color={0xffffff} intensity={0.1} />
+            </perspectiveCamera>
+            <SwarmCanvaComponentBody />
+          </scene>
       </Canvas>
     </div>
   );
