@@ -1,6 +1,6 @@
 import { Canvas, useFrame } from '@react-three/fiber';
 import { InstancedRigidBodies, RapierRigidBody, BallCollider, type InstancedRigidBodyProps, Physics, RigidBody } from "@react-three/rapier";
-import { useEffect, useMemo, useRef, type FC } from 'react';
+import { useMemo, useRef, type FC } from 'react';
 import { Euler, Quaternion, Spherical, Vector3 } from 'three';
 
 const SQRT_BALL_AMOUNT = 40;
@@ -11,7 +11,9 @@ const GFORCE = 6.67408e-11;
 
 const CORE_MASS = 2.0;
 const SPHERE_MASS = 1.0;
-const OBJECT_RESTITUTION = 0.001;
+const OBJECT_RESTITUTION = 0.01;
+
+const GRAVITY_CENTER = new Vector3(0, 0, 0);
 
 interface SwarmCanvaComponentProps {}
 
@@ -21,20 +23,16 @@ const SwarmCanvaComponentBody: FC<SwarmCanvaComponentProps> = () => {
 
   const ballsRigidBodiesRef = useRef<RapierRigidBody[] | null>(null);
 
-  // gravity center that spheres are attracted to
-  const gravityCenter = useRef(new Vector3(0, 0, 0));
-
   // build positions on a spherical distribution (porting the spherical packing from your script)
   const instances = useMemo(() => {
     const inst: InstancedRigidBodyProps[] = [];
     const s = new Spherical(2);
     const v = new Vector3();
 
-    for (let i = 0; i < SQRT_BALL_AMOUNT; i++) {
-      for (let j = 0; j < SQRT_BALL_AMOUNT; j++) {
-        // spread points on a spherical pattern similar to original script
-        s.theta = j * 0.2 + Math.random() * 0.05;
-        s.phi = i * 0.2 + Math.random() * 0.05;
+    for (let i = 0; i < SQRT_BALL_AMOUNT; ++i) {
+      for (let j = 0; j < SQRT_BALL_AMOUNT; ++j) {
+        s.theta += j * 20;
+        s.phi += i * 20;
         v.setFromSpherical(s);
         inst.push({
           key: `inst_${i}_${j}`,
@@ -56,11 +54,11 @@ const SwarmCanvaComponentBody: FC<SwarmCanvaComponentProps> = () => {
 
     ballsRigidBodiesRef.current?.forEach((ballRB) => {
       const translation = ballRB.translation();
-      const pos: Vector3 = new Vector3(translation.x, translation.y, translation.z); // { x, y, z }
+      const pos: Vector3 = new Vector3(translation.x, translation.y, translation.z);
 
       // Newtonian-ish force
-      const scale = (GFORCE * CORE_MASS * SPHERE_MASS) / Math.pow(pos.distanceTo(gravityCenter.current), 2);
-      const impulse = gravityCenter.current.clone().sub(pos).normalize().multiplyScalar(scale).normalize();
+      const scale = (GFORCE * CORE_MASS * SPHERE_MASS) / Math.pow(pos.distanceTo(GRAVITY_CENTER), 2);
+      const impulse = GRAVITY_CENTER.clone().sub(pos).normalize().multiplyScalar(scale).normalize();
       ballRB.applyImpulse(impulse, true);
     });
   });
@@ -68,7 +66,7 @@ const SwarmCanvaComponentBody: FC<SwarmCanvaComponentProps> = () => {
   return (
     <>
       <pointLight color={0xFFFFFF} position={[0, -10, 0]} intensity={1} />
-      <Physics gravity={[0, 0, 0]}>
+      <Physics gravity={[GRAVITY_CENTER.x, GRAVITY_CENTER.y, GRAVITY_CENTER.z]}>
         <RigidBody
           type='fixed'
           colliders='cuboid'
