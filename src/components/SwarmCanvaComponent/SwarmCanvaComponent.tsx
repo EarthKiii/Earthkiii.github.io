@@ -1,7 +1,8 @@
 import { Canvas, useFrame } from '@react-three/fiber';
-import { InstancedRigidBodies, RapierRigidBody, BallCollider, type InstancedRigidBodyProps, Physics, RigidBody } from "@react-three/rapier";
-import { useMemo, useRef, type FC } from 'react';
-import { Color, Euler, Quaternion, Spherical, Vector3 } from 'three';
+import { PerspectiveCamera } from '@react-three/drei';
+import { InstancedRigidBodies, RapierRigidBody, BallCollider, type InstancedRigidBodyProps, Physics, RigidBody, CuboidCollider } from "@react-three/rapier";
+import { useMemo, useRef } from 'react';
+import { Color, Euler, PCFSoftShadowMap, Quaternion, Spherical, Vector3 } from 'three';
 
 const SQRT_BALL_AMOUNT = 40;
 const COUNT = SQRT_BALL_AMOUNT ** 2;
@@ -17,7 +18,11 @@ const GRAVITY_CENTER = new Vector3(0, 0, 0);
 
 const BG_COLOR = new Color(0x232428);
 
-const SwarmCanvaComponentBody: FC = () => { 
+const _pos = new Vector3();
+const _impulse = new Vector3();
+const _q = new Quaternion();
+
+const SwarmCanvaComponentBody = () => { 
   const coreRef = useRef<RapierRigidBody | null>(null);
   const coreRotationEuler = useRef(new Euler(45, 45, 45));
 
@@ -50,42 +55,42 @@ const SwarmCanvaComponentBody: FC = () => {
 
     // rotate the core slowly
     coreRotationEuler.current.y = coreRotationEuler.current.y > 180 ? -180 : coreRotationEuler.current.y + 0.1;
-    const q = new Quaternion().setFromEuler(coreRotationEuler.current);
-    coreRef.current.setRotation(q, true);
+    _q.setFromEuler(coreRotationEuler.current);
+    coreRef.current.setRotation(_q, true);
 
-    Promise.all(
-      ballsRigidBodiesRef.current?.map((ballRB) => new Promise((resolve) => {
-        const translation = ballRB.translation();
-        const pos: Vector3 = new Vector3(translation.x, translation.y, translation.z);
+    for (const ballRB of ballsRigidBodiesRef.current) {
+      const t = ballRB.translation();
+      _pos.set(t.x, t.y, t.z);
+      const dist = _pos.distanceTo(GRAVITY_CENTER);
+      if (dist < 0.001) continue; // skip bodies at origin
 
-        // Newtonian-ish force
-        const scale = (GFORCE * CORE_MASS * SPHERE_MASS) / Math.pow(pos.distanceTo(GRAVITY_CENTER), 2);
-        const impulse = GRAVITY_CENTER.clone().sub(pos).normalize().multiplyScalar(scale).normalize();
-        ballRB.applyImpulse(impulse, true);
-        resolve(true);
-      }
-    )));
+      // Newtonian-ish force
+      const scale = (GFORCE * CORE_MASS * SPHERE_MASS) / Math.pow(_pos.distanceTo(GRAVITY_CENTER), 2);
+      _impulse.copy(GRAVITY_CENTER).sub(_pos).normalize().multiplyScalar(scale).normalize();
+      ballRB.applyImpulse(_impulse, true);
+    }
   });
 
   return (
     <>
       <pointLight color={0xFFFFFF} position={[0, -10, 0]} intensity={1} />
-      <Physics gravity={[GRAVITY_CENTER.x, GRAVITY_CENTER.y, GRAVITY_CENTER.z]}>
+      <Physics gravity={[GRAVITY_CENTER.x, GRAVITY_CENTER.y, GRAVITY_CENTER.z]} timeStep="vary">
         <RigidBody
           type='fixed'
-          colliders='cuboid'
           ref={coreRef}
           position={[0, 0, 0]}
           mass={CORE_MASS}
           restitution={OBJECT_RESTITUTION}
+          colliders={false}
         >
-          <boxGeometry args={[0.6, 0.6, 0.6]} />
+          <boxGeometry args={[1.2, 1.2, 1.2]} />
+          <CuboidCollider args={[0.6, 0.6, 0.6]} />
         </RigidBody>
         <InstancedRigidBodies
           type='dynamic'
           ref={ballsRigidBodiesRef}
           instances={instances}
-          colliders='ball'
+          colliders={false}
           colliderNodes={[<BallCollider args={[SPHERE_RADIUS]} />]}
           mass={SPHERE_MASS}
           restitution={OBJECT_RESTITUTION}
@@ -101,19 +106,16 @@ const SwarmCanvaComponentBody: FC = () => {
 };
 
 const SwarmCanvaComponent = () => {
-  const canvaRef = useRef<HTMLCanvasElement>(null);
-
   return (
     <div style={{ width: "100%", height: "100%", touchAction: "none" }}>
       <Canvas 
-        ref={canvaRef}
-        shadows>
+        shadows={{ type: PCFSoftShadowMap }}>
+        <PerspectiveCamera makeDefault position={[0, -5, 0]} fov={75} near={0.1} far={1000}>
+          <directionalLight color={0xffffff} intensity={0.1} castShadow />
+        </PerspectiveCamera>
         <scene background={BG_COLOR}>
-            <perspectiveCamera aspect={canvaRef.current ? canvaRef.current.clientWidth / canvaRef.current.clientHeight : 1} position={[0, -5, 0]} fov={75} near={0.1} far={1000} >
-              <directionalLight color={0xffffff} intensity={0.1} />
-            </perspectiveCamera>
-            <SwarmCanvaComponentBody />
-          </scene>
+          <SwarmCanvaComponentBody />
+        </scene>
       </Canvas>
     </div>
   );
