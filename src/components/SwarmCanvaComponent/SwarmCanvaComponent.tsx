@@ -1,6 +1,6 @@
 import { Canvas } from '@react-three/fiber';
 import { InstancedRigidBodies, RapierRigidBody, BallCollider, type InstancedRigidBodyProps, Physics, RigidBody, CuboidCollider, useBeforePhysicsStep } from "@react-three/rapier";
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Euler, PCFSoftShadowMap, Quaternion, Spherical, Vector3 } from 'three';
 
 const SQRT_BALL_AMOUNT = 40;
@@ -41,8 +41,8 @@ const SwarmScene = () => {
       for (let j = 0; j < SQRT_BALL_AMOUNT; ++j) {
         coreCirlce.theta += j * 20;
         coreCirlce.phi += i * 20;
-        // randomize radius between 2 and 6 so balls don't all spawn on top of each other
-        coreCirlce.radius = 2 + Math.random() * 4;
+
+        coreCirlce.radius = 4 + Math.random() * 0.85;
         coreCirlceVect.setFromSpherical(coreCirlce);
 
         inst.push({
@@ -77,7 +77,7 @@ const SwarmScene = () => {
   return (
     <>
       <RigidBody
-        type='fixed'
+        type='kinematicPosition'
         ref={coreRef}
         position={[0, 0, 0]}
         colliders={false}
