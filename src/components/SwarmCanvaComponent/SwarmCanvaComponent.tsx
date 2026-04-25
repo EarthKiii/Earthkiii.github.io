@@ -1,7 +1,8 @@
 import { Canvas } from '@react-three/fiber';
 import { InstancedRigidBodies, RapierRigidBody, BallCollider, type InstancedRigidBodyProps, Physics, RigidBody, CuboidCollider, useBeforePhysicsStep } from "@react-three/rapier";
 import { useMemo, useRef } from 'react';
-import { Euler, PCFSoftShadowMap, Quaternion, Spherical, Vector3 } from 'three';
+import { Color, Euler, PCFSoftShadowMap, Quaternion, Spherical, Vector3 } from 'three';
+import { CameraLight } from '../CameraLight/CameraLight';
 
 const SQRT_BALL_AMOUNT = 40;
 const COUNT = SQRT_BALL_AMOUNT ** 2;
@@ -17,15 +18,14 @@ const SPHERE_DENSITY = SPHERE_MASS / ((4/3) * Math.PI * Math.pow(SPHERE_RADIUS, 
 
 const OBJECT_RESTITUTION = 0.01;
 
-const GRAVITY_CENTER = new Vector3(0, 0, 0);
-
-// const BG_COLOR = new Color(0x232428);
+const BG_COLOR = new Color(0x232428);
 
 const _pos = new Vector3();
 const _impulse = new Vector3();
 const _q = new Quaternion();
 
-const SwarmScene = () => {
+
+const SwarmScene = ({ gravityCenter }: { gravityCenter: React.RefObject<Vector3> }) => {
   const coreRef = useRef<RapierRigidBody | null>(null);
   const coreRotationEuler = useRef(new Euler(45, 45, 45));
 
@@ -65,11 +65,11 @@ const SwarmScene = () => {
     for (const ballRB of ballsRigidBodiesRef.current) {
       const t = ballRB.translation();
       _pos.set(t.x, t.y, t.z);
-      const dist = _pos.distanceTo(GRAVITY_CENTER);
+      const dist = _pos.distanceTo(gravityCenter.current);
 
       // Newtonian-ish force
       const scale = (GFORCE * CORE_MASS * SPHERE_MASS) / Math.pow(dist, 2);
-      _impulse.copy(GRAVITY_CENTER).sub(_pos).normalize().multiplyScalar(scale).normalize();
+      _impulse.copy(gravityCenter.current).sub(_pos).normalize().multiplyScalar(scale).normalize();
       ballRB.applyImpulse(_impulse, true);
     }
   });
@@ -101,26 +101,36 @@ const SwarmScene = () => {
   );
 };
 
-const SwarmCanvaComponentBody = () => { 
-  return (
-    <>
-      <pointLight color={0xFFFFFF} position={[0, -10, 0]} intensity={1} />
-      <Physics gravity={[GRAVITY_CENTER.x, GRAVITY_CENTER.y, GRAVITY_CENTER.z]}>
-        <SwarmScene />
-      </Physics>
-    </>
-  );
-};
-
 const SwarmCanvaComponent = () => {
+  const gravityCenter = useRef(new Vector3(0, 0, 0));
+  
+  const handlePointerDown = (e: React.PointerEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    gravityCenter.current.x = (e.clientX - rect.left - rect.width * 0.5) / 100;
+    gravityCenter.current.z = -(e.clientY - rect.top - rect.height * 0.5) / 100;
+  };
+
+  const handlePointerUp = () => {
+    gravityCenter.current.set(0, 0, 0);
+  };
+
   return (
-    <div style={{ width: "100%", height: "100%", touchAction: "none" }}>
+    <div style={{ width: "100%", height: "100%", touchAction: "none" }}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+    >
       <Canvas
         shadows={{ type: PCFSoftShadowMap }}
         camera={{ fov: 75, near: 0.1, far: 1000, position: [0, -5, 0] }}
         onCreated={({ camera }) => camera.lookAt(0, 0, 0)}
       >
-        <SwarmCanvaComponentBody />
+        <color attach="background" args={[BG_COLOR]} />
+        <CameraLight />
+        <pointLight color={0xFFFFFF} position={[0, -10, 0]} intensity={1} />
+        <Physics gravity={[gravityCenter.current.x, gravityCenter.current.y, gravityCenter.current.z]}>
+          <SwarmScene gravityCenter={gravityCenter}/>
+        </Physics>
       </Canvas>
     </div>
   );
